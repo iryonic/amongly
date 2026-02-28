@@ -65,7 +65,7 @@ if (!isset($_SESSION['nickname']) && !in_array($view, $allowed_without_session))
                 <div class="h-px w-10 bg-white/10 mx-auto"></div>
                 <div class="space-y-2">
                     <p class="text-[10px] font-bold text-neutral-400 uppercase tracking-[0.4em]">
-                        &copy; <?= date('Y') ?> MADE WITH ❤️ BY <a href="https://irfanmanzoor.in" target="_blank">IRFAN MANOOR</a>
+                        &copy; <?= date('Y') ?> MADE WITH ❤️ BY <a href="https://irfanmanzoor.in" target="_blank">IRFAN MANZOOR</a>
                     </p>
                     <div class="flex items-center justify-center gap-4 text-[8px] font-black text-neutral-600 uppercase tracking-widest">
                         <span>AMONGLY</span>
