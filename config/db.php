@@ -1,10 +1,22 @@
 <?php
 // config/db.php
 
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'amongly');
-define('DB_USER', 'root');
-define('DB_PASS', '');
+// Environment Switch (Set to true for production)
+$isProduction = ($_SERVER['SERVER_NAME'] !== 'localhost' && $_SERVER['SERVER_ADDR'] !== '127.0.0.1');
+
+if ($isProduction) {
+    // Production Database Settings
+    define('DB_HOST', 'localhost'); // Usually localhost on shared hosting
+    define('DB_NAME', 'u167160735_amongly');
+    define('DB_USER', 'u167160735_amongly');
+    define('DB_PASS', '0z>DHgmVm@Z');
+} else {
+    // Local Development Settings
+    define('DB_HOST', 'localhost');
+    define('DB_NAME', 'amongly');
+    define('DB_USER', 'root');
+    define('DB_PASS', '');
+}
 
 class Database {
     private static $instance = null;

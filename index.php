@@ -51,15 +51,31 @@ if (!isset($_SESSION['nickname']) && !in_array($view, $allowed_without_session))
 </head>
 <body class="selection:bg-indigo-500/30">
     <div class="neo-shell">
-        <main id="view-root" class="view-content view-transition v-hidden">
-            <div class="max-nexus">
+        <div id="view-root" class="view-content view-transition v-hidden flex flex-col">
+            <main class="max-nexus flex-1 !min-h-[auto] pb-12">
                 <?php 
                 $file = "views/{$view}.php";
                 if (file_exists($file)) include $file;
                 else include 'views/landing.php';
                 ?>
-            </div>
-        </main>
+            </main>
+
+            <?php if ($view !== 'room'): ?>
+            <footer class="max-nexus !min-h-0 py-12 text-center space-y-4 opacity-40 hover:opacity-100 transition-opacity">
+                <div class="h-px w-10 bg-white/10 mx-auto"></div>
+                <div class="space-y-2">
+                    <p class="text-[10px] font-bold text-neutral-400 uppercase tracking-[0.4em]">
+                        &copy; <?= date('Y') ?> MADE WITH ❤️ BY <a href="https://irfanmanzoor.in" target="_blank">IRFAN MANOOR</a>
+                    </p>
+                    <div class="flex items-center justify-center gap-4 text-[8px] font-black text-neutral-600 uppercase tracking-widest">
+                        <span>AMONGLY</span>
+                        <div class="w-1 h-1 rounded-full bg-neutral-800"></div>
+                        <span>V2.4.0-STABLE</span>
+                    </div>
+                </div>
+            </footer>
+            <?php endif; ?>
+        </div>
     </div>
 
     <!-- Feedback Layer -->

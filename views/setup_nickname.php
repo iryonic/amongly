@@ -5,14 +5,6 @@ $currentName = $_SESSION['nickname'] ?? '';
 $currentAvatar = $_SESSION['avatar'] ?? '🦊';
 ?>
 <div class="flex flex-col space-y-12 animate-fade-in relative">
-    <!-- Back Navigation -->
-    <div class="absolute -top-6 left-0">
-        <button onclick="navigate('index.php')" class="flex items-center gap-2 text-neutral-500 hover:text-white transition-colors group">
-            <svg class="w-4 h-4 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
-            <span class="text-xs font-bold uppercase tracking-widest">Back</span>
-        </button>
-    </div>
-
     <div class="space-y-4 pt-10">
         <h1 class="text-4xl font-bold text-white"><?= $hasSession ? 'My Profile' : 'Setup Profile' ?></h1>
         <p class="text-neutral-400 max-w-[300px]"><?= $hasSession ? 'Update your appearance and nickname for upcoming games.' : 'Choose a unique avatar and nickname to identify yourself.' ?></p>
@@ -24,7 +16,9 @@ $currentAvatar = $_SESSION['avatar'] ?? '🦊';
             <label class="text-xs font-semibold text-neutral-500 uppercase tracking-widest">Select Avatar</label>
             <div class="flex gap-4 overflow-x-auto pb-4 no-scrollbar -mx-6 px-6" id="avatar-grid">
                 <?php 
-                $avatars = ['🦊', '🐱', '🐸', '🐼', '🤖', '👾', '🚀', '👽', '👻', '🌟', '💎', '🔥', '⚡', '🌈'];
+                $db = Database::getInstance();
+                $setting = $db->query("SELECT setting_value FROM settings WHERE setting_key = 'available_avatars'")->fetchColumn();
+                $avatars = $setting ? explode(',', $setting) : ['🦊', '🐱', '🐸', '🐼', '🤖', '👾', '🚀', '👽', '👻', '🌟', '💎', '🔥', '⚡', '🌈'];
                 foreach ($avatars as $i => $a): 
                     $isActive = ($a === $currentAvatar);
                 ?>

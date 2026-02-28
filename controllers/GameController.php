@@ -89,7 +89,7 @@ class GameController {
 
         // Record the guess
         $stmt = $this->db->prepare("INSERT INTO imposter_guesses (round_id, player_id, guess, is_correct) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE guess = VALUES(guess), is_correct = VALUES(is_correct)");
-        $stmt->execute([$round['id'], $playerId, clean($guess), $isCorrect ? 1 : 0]);
+        $stmt->execute([$roundId, $playerId, clean($guess), $isCorrect ? 1 : 0]);
 
         $fakeRound = ['id' => $roundId, 'imposter_id' => $playerId];
         if ($isCorrect) {
