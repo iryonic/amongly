@@ -1,0 +1,16 @@
+{
+    "name": "Amongly",
+    "short_name": "Amongly",
+    "start_url": "./index.php",
+    "display": "standalone",
+    "background_color": "#09090b",
+    "theme_color": "#09090b",
+    "description": "A deduction word game.",
+    "icons": [
+        {
+            "src": "./assets/img/icon-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}
