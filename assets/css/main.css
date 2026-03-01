@@ -365,3 +365,174 @@ body::before {
     border-color: var(--accent);
     background: var(--accent-soft);
 }
+
+/* Ghost Frequencies */
+.ghost-shell {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    left: 24px;
+    max-width: 432px;
+    margin: 0 auto;
+    z-index: 60;
+    pointer-events: none;
+}
+
+.ghost-trigger {
+    width: 65px;
+    height: 65px;
+    background: var(--surface-raised);
+    border: 1px solid var(--border-bright);
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    pointer-events: auto;
+    cursor: pointer;
+    margin-left: auto;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+}
+
+.ghost-trigger:active {
+    transform: scale(0.9);
+}
+
+.ghost-notif {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 12px;
+    height: 12px;
+    background: var(--accent);
+    border-radius: 50%;
+    border: 2px solid var(--surface-raised);
+    display: none;
+}
+
+.ghost-panel {
+    background: rgba(10, 10, 10, 0.95);
+    backdrop-filter: blur(24px);
+    border: 1px solid var(--border-bright);
+    border-radius: 24px;
+    padding: 24px;
+    margin-bottom: 12px;
+    display: none;
+    flex-direction: column;
+    gap: 20px;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.8);
+    pointer-events: auto;
+    max-height: 440px;
+    animation: slideUp 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.ghost-panel.active {
+    display: flex;
+}
+
+.ghost-messages {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-right: 8px;
+    min-height: 100px;
+}
+
+.ghost-msg {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    animation: fadeIn 0.3s ease;
+}
+
+.ghost-msg-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #525252;
+}
+
+.ghost-msg-bubble {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 10px 14px;
+    font-size: 14px;
+    color: #ededed;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    line-height: 1.4;
+    width: fit-content;
+}
+
+.ghost-reaction-bubble {
+    font-size: 24px;
+    filter: drop-shadow(0 0 10px rgba(0, 0, 0, 0.5));
+}
+
+.ghost-input-wrap {
+    display: flex;
+    gap: 10px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+}
+
+.ghost-input {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 12px 18px;
+    color: #fff;
+    font-size: 15px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.ghost-input:focus {
+    border-color: var(--accent);
+}
+
+.ghost-send {
+    width: 48px;
+    height: 48px;
+    background: var(--accent);
+    color: #fff;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.ghost-send:active {
+    transform: scale(0.9);
+}
+
+.ghost-emoji-grid {
+    display: grid;
+    grid-template-cols: repeat(5, 1fr);
+    gap: 10px;
+}
+
+.ghost-emoji-btn {
+    font-size: 22px;
+    aspect-ratio: 1;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.ghost-emoji-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+}

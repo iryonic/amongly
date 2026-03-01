@@ -30,15 +30,18 @@ class GameController {
         // Select Imposter randomly from alive players
         $imposter = $alivePlayers[array_rand($alivePlayers)];
 
-        // Select Word (exclude the word from the immediately preceding round in this room)
-        $previousWordId = $this->db->query("SELECT word_id FROM rounds WHERE room_id = $roomId ORDER BY created_at DESC LIMIT 1")->fetchColumn();
+        // Select Word (exclude the last 5 words used in this room)
+        $historyStmt = $this->db->prepare("SELECT word_id FROM rounds WHERE room_id = ? ORDER BY created_at DESC LIMIT 5");
+        $historyStmt->execute([$roomId]);
+        $history = $historyStmt->fetchAll(PDO::FETCH_COLUMN);
         
         $sql = "SELECT id FROM words WHERE category_id = ? AND difficulty = ? AND status = 'active'";
         $params = [$room['category_id'], $room['difficulty']];
         
-        if ($previousWordId) {
-            $sql .= " AND id != ?";
-            $params[] = $previousWordId;
+        if (!empty($history)) {
+            $placeholders = str_repeat('?,', count($history) - 1) . '?';
+            $sql .= " AND id NOT IN ($placeholders)";
+            $params = array_merge($params, $history);
         }
         
         $sql .= " ORDER BY RAND() LIMIT 1";
@@ -47,8 +50,8 @@ class GameController {
         $stmt->execute($params);
         $word = $stmt->fetch();
         
-        // Fallback: if no other word exists, allow the repeat
-        if (!$word && $previousWordId) {
+        // Fallback: if no word matches (e.g. category has < 5 words), just pick any active word
+        if (!$word) {
             $stmt = $this->db->prepare("SELECT id FROM words WHERE category_id = ? AND difficulty = ? AND status = 'active' ORDER BY RAND() LIMIT 1");
             $stmt->execute([$room['category_id'], $room['difficulty']]);
             $word = $stmt->fetch();
@@ -69,8 +72,21 @@ class GameController {
     }
 
     public function submitClue($roundId, $playerId, $clueText) {
+        $round = $this->db->prepare("SELECT w.word FROM rounds r JOIN words w ON r.word_id = w.id WHERE r.id = ?");
+        $round->execute([$roundId]);
+        $word = $round->fetchColumn();
+
+        // Sanitize for comparison
+        $cleanClue = strtolower(trim($clueText));
+        $cleanWord = strtolower(trim($word));
+
+        if ($cleanClue === $cleanWord) {
+            return ['success' => false, 'error' => 'You cannot use the secret word as a clue!'];
+        }
+
         $stmt = $this->db->prepare("INSERT INTO clues (round_id, player_id, clue_text) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE clue_text = VALUES(clue_text)");
-        return $stmt->execute([$roundId, $playerId, clean($clueText)]);
+        $stmt->execute([$roundId, $playerId, clean($clueText)]);
+        return ['success' => true];
     }
 
     /**
@@ -172,11 +188,9 @@ class GameController {
         $now        = time();
         $phaseStart = (int)$room['phase_start_time'];
 
-        // Check reveal BEFORE loading round (round is 'completed' at this point)
+        // STOP! We no longer auto-reset the game so players can chat in results phase.
+        // It should remain in 'reveal' until the host manually triggers next game.
         if ($room['status'] === 'reveal') {
-            if ($now - $phaseStart >= self::REVEAL_DURATION) {
-                $this->resetForNewGame($roomId);
-            }
             return;
         }
 
@@ -185,9 +199,9 @@ class GameController {
 
         $players = $this->playerModel->getPlayersInRoom($roomId);
         
-        // Only count players as 'active' for transitions if they polled in the last 30s
+        // Increased timeout from 12s to 20s for better stability with laggy connections
         $activeAlivePlayers = array_filter($players, function($p) { 
-            return $p['is_alive'] == 1 && (time() - strtotime($p['last_active_at'])) < 30; 
+            return $p['is_alive'] == 1 && (time() - strtotime($p['last_active_at'])) < 20; 
         });
         $aliveCount = count($activeAlivePlayers);
 
@@ -203,9 +217,9 @@ class GameController {
                 $stmt->execute([$round['id']]);
                 $clueCount = (int)$stmt->fetchColumn();
 
-                // Only auto-transition if we have at least one active player and everyone submitted.
+                // Only auto-transition if we have at least 1 clue AND everyone submitted.
                 // Otherwise, wait for the timeout.
-                if (($aliveCount > 0 && $clueCount >= $aliveCount) || ($now - $phaseStart >= self::CLUE_DURATION)) {
+                if (($aliveCount > 0 && $clueCount >= $aliveCount && $clueCount > 0) || ($now - $phaseStart >= self::CLUE_DURATION)) {
                     $this->roomModel->updateStatus($roomId, 'voting');
                 }
                 break;
@@ -232,9 +246,9 @@ class GameController {
         $eliminateVotes = $summary['eliminate'];
         $totalVotes    = $summary['total'];
 
-        // If no votes at all — imposter wins
+        // If no votes at all — treat as skip (nobody reached consensus)
         if ($totalVotes === 0) {
-            $this->endGame($roomId, $round, 'imposter', null, 'no_votes');
+            $this->skipToNewClueRound($roomId, $round);
             return;
         }
 
@@ -267,7 +281,17 @@ class GameController {
         if ($isImposter) {
             $this->endGame($roomId, $round, 'crew', $eliminatedId, 'voted_out');
         } else {
-            $this->endGame($roomId, $round, 'imposter', $eliminatedId, 'wrong_elimination');
+            // Wrong person out. Check if game can continue.
+            $players = $this->playerModel->getPlayersInRoom($roomId);
+            $alivePlayers = array_filter($players, function($p) { return $p['is_alive'] == 1; });
+            
+            if (count($alivePlayers) <= 2) {
+                // Imposter wins if they are one of the last two (cannot be outvoted anymore)
+                $this->endGame($roomId, $round, 'imposter', $eliminatedId, 'crew_depleted');
+            } else {
+                // Return to clue phase for the next round of interrogation
+                $this->skipToNewClueRound($roomId, $round);
+            }
         }
     }
 
@@ -276,10 +300,11 @@ class GameController {
      * (15s reveal so players remember their roles, then clue phase again)
      */
     private function skipToNewClueRound($roomId, $round) {
-        // Clear only votes so players can cast new ones, but keep clues!
+        // Clear both votes AND clues so players can start fresh
         $this->db->prepare("DELETE FROM votes WHERE round_id = ?")->execute([$round['id']]);
+        $this->db->prepare("DELETE FROM clues WHERE round_id = ?")->execute([$round['id']]);
 
-        // Go back to clue phase directly (they already know their roles)
+        // Go back to clue phase directly
         $this->roomModel->updateStatus($roomId, 'clue');
     }
 

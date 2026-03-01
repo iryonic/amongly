@@ -60,7 +60,10 @@ function get_current_player() {
 
 function get_current_player_id() {
     $player = get_current_player();
-    return $player ? $player['id'] : null;
+    if ($player) return $player['id'];
+    
+    // Final fallback to session if header is missing (page refresh logic)
+    return $_SESSION['player_id'] ?? null;
 }
 
 function get_current_room_id() {

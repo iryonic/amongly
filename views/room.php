@@ -123,5 +123,41 @@
             <div id="reveal-content" class="w-full"></div>
         </div>
     </main>
+
+    <!-- Ghost Frequencies (Eliminated Player Hub) -->
+    <div id="ghost-shell" class="ghost-shell hidden">
+        <div id="ghost-panel" class="ghost-panel">
+            <div class="sheet-handle"></div>
+            <!-- Spectral Intelligence (Visible to dead only) -->
+            <div id="ghost-intel" class="hidden flex items-center justify-between p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-xl mb-2">
+                <div class="flex flex-col">
+                    <span class="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">Infiltrator</span>
+                    <span id="ghost-imposter-name" class="text-xs font-bold text-white">Searching...</span>
+                </div>
+                <div class="flex flex-col text-right">
+                    <span class="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">Secret Word</span>
+                    <span id="ghost-secret-word" class="text-xs font-bold text-white text-indigo-300">??????</span>
+                </div>
+            </div>
+            <div id="ghost-messages" class="ghost-messages no-scrollbar"></div>
+            <div class="ghost-emoji-grid">
+                <div class="ghost-emoji-btn" onclick="sendGhostSignal('', '😱')">😱</div>
+                <div class="ghost-emoji-btn" onclick="sendGhostSignal('', '💀')">💀</div>
+                <div class="ghost-emoji-btn" onclick="sendGhostSignal('', '🕵️')">🕵️</div>
+                <div class="ghost-emoji-btn" onclick="sendGhostSignal('', '🔥')">🔥</div>
+                <div class="ghost-emoji-btn" onclick="sendGhostSignal('', '👀')">👀</div>
+            </div>
+            <div class="ghost-input-wrap">
+                <input type="text" id="ghost-input" class="ghost-input" placeholder="Signal from the beyond..." maxlength="100">
+                <button onclick="sendGhostSignal()" class="ghost-send">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+                </button>
+            </div>
+        </div>
+        <button onclick="toggleGhostPanel()" class="ghost-trigger">
+            <div id="ghost-notif" class="ghost-notif"></div>
+            <span class="text-3xl">👻</span>
+        </button>
+    </div>
 </div>
 

@@ -52,13 +52,21 @@ $state = [
 
 if ($round) {
     $roundId = $round['id'];
+    $db = Database::getInstance();
 
-    // Send clues in ALL active game phases (not just clue phase)
-    $state['clues'] = $gameCtrl->getClues($roundId);
+    // Clue Privacy: Only send clues in ALL active game phases EXCEPT 'clue' phase.
+    // In 'clue' phase, only send if the current player HAS already submitted theirs.
+    if ($room['status'] !== 'clue') {
+        $state['clues'] = $gameCtrl->getClues($roundId);
+    } else {
+        $stmt = $db->prepare("SELECT player_id FROM clues WHERE round_id = ? AND player_id = ?");
+        $stmt->execute([$roundId, $playerId]);
+        if ($stmt->fetch()) {
+            $state['clues'] = $gameCtrl->getClues($roundId);
+        }
+    }
 
     // Track which players have taken action
-    $db = Database::getInstance();
-    
     $stmt = $db->prepare("SELECT player_id FROM clues WHERE round_id = ?");
     $stmt->execute([$roundId]);
     $state['clue_player_ids'] = $stmt->fetchAll(PDO::FETCH_COLUMN);
@@ -66,6 +74,24 @@ if ($round) {
     $stmt = $db->prepare("SELECT voter_id FROM votes WHERE round_id = ?");
     $stmt->execute([$roundId]);
     $state['voted_player_ids'] = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+    // Ghost Reveal: Dead players see EVERYTHING.
+    if (!$player['is_alive']) {
+        $state['is_ghost']   = true;
+        $state['imposter_id'] = $round['imposter_id'];
+        $state['word']        = $round['word']; // Reveal word to ghosts immediately
+    }
+
+    // Ghost Chat: Fetch last 15 messages for this room/round
+    $stmt = $db->prepare("
+        SELECT g.message, g.emoji, p.nickname, p.avatar 
+        FROM ghost_chat g 
+        JOIN players p ON g.player_id = p.id 
+        WHERE g.room_id = ? AND g.round_id = ?
+        ORDER BY g.created_at ASC LIMIT 15
+    ");
+    $stmt->execute([$roomId, $roundId]);
+    $state['ghost_chat'] = $stmt->fetchAll();
 
     if ($room['status'] === 'clue') {
         $state['submitted_clue'] = in_array($playerId, $state['clue_player_ids']);

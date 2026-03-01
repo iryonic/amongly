@@ -78,9 +78,14 @@ function updateUI(state) {
         stopTimer();
     }
 
+    // Ghost Frequencies
+    renderGhostFrequencies(state);
+
     // Cleanup logic
     if (state.room_status === 'waiting') {
         revealShown = false; voteBtnHash = ''; lastCluePhaseStart = 0;
+        const ghostShell = document.getElementById('ghost-shell');
+        if (ghostShell) ghostShell.classList.add('hidden');
     }
 }
 
@@ -154,10 +159,10 @@ function renderIdentity(state) {
         <div class="neo-card p-10 bg-indigo-500/5 border-indigo-500/20 text-center space-y-6">
             <div class="w-20 h-20 mx-auto rounded-3xl bg-indigo-500/10 flex items-center justify-center text-4xl">${isImposter ? '🕵️' : '🔑'}</div>
             <div class="space-y-1">
-                <span class="text-xs font-bold text-indigo-400 uppercase tracking-[0.2em]">${isImposter ? 'Assignment: Rogue' : 'Assignment: Crew'}</span>
+                <span class="text-xs font-bold text-indigo-400 uppercase tracking-[0.2em]">${isImposter ? 'You are Imposter' : 'You are Crew'}</span>
                 <div class="text-5xl font-extrabold text-white capitalize tracking-tighter">${state.word || '??????'}</div>
             </div>
-            <p class="text-xs text-neutral-500 font-medium px-4 leading-relaxed">${isImposter ? 'Infiltrate the group. Blend in and provide a convincing verbal clue.' : 'Protect the secret word and identify the infiltrator.'}</p>
+            <p class="text-xs text-neutral-500 font-medium px-4 leading-relaxed">${isImposter ? 'Your goal is to infiltrate the group and provide a convincing verbal clue.' : 'Your goal is to protect the secret word and identify the imposters.'}</p>
         </div>
     `;
 }
@@ -378,6 +383,96 @@ window.kickPlayer = async (id) => {
         pollState();
     } else showToast(data.error);
 };
+
+// Spectral Mechanics
+let _lastGhostCount = 0;
+function renderGhostFrequencies(state) {
+    const shell = document.getElementById('ghost-shell');
+    if (!shell) return;
+
+    const isGhost = !state.is_alive;
+    const isReveal = state.room_status === 'reveal';
+
+    // Show shell if dead or in result screen
+    const intel = document.getElementById('ghost-intel');
+    if (isGhost || isReveal) {
+        if (shell.classList.contains('hidden')) {
+            shell.classList.remove('hidden');
+            if (isGhost) showToast("Spectral frequencies unlocked.", "success");
+        }
+
+        // Populate Intel
+        if (intel && (state.word || isReveal)) {
+            intel.classList.remove('hidden');
+            const imposter = state.players.find(p => p.id == state.imposter_id);
+            document.getElementById('ghost-imposter-name').textContent = imposter ? imposter.nickname : 'Unknown';
+            document.getElementById('ghost-secret-word').textContent = state.word || '??????';
+        }
+    } else {
+        shell.classList.add('hidden');
+        if (intel) intel.classList.add('hidden');
+    }
+
+    const messagesEl = document.getElementById('ghost-messages');
+    if (messagesEl && state.ghost_chat) {
+        if (state.ghost_chat.length > _lastGhostCount) {
+            const notif = document.getElementById('ghost-notif');
+            if (notif && !document.getElementById('ghost-panel').classList.contains('active')) {
+                notif.style.display = 'block';
+                haptic('light');
+            }
+        }
+        _lastGhostCount = state.ghost_chat.length;
+
+        messagesEl.innerHTML = state.ghost_chat.map(m => {
+            if (m.emoji && !m.message) {
+                return `<div class="ghost-msg p-2 text-center animate-bounce-in ghost-reaction-bubble">${m.emoji}</div>`;
+            }
+            return `
+                <div class="ghost-msg">
+                    <div class="ghost-msg-header">${m.avatar} ${m.nickname}</div>
+                    <div class="ghost-msg-bubble">${m.message}</div>
+                </div>
+            `;
+        }).join('');
+        // Scroll to bottom
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+}
+
+window.toggleGhostPanel = () => {
+    const panel = document.getElementById('ghost-panel');
+    const notif = document.getElementById('ghost-notif');
+    if (!panel) return;
+    panel.classList.toggle('active');
+    if (panel.classList.contains('active') && notif) notif.style.display = 'none';
+    haptic('medium');
+};
+
+window.sendGhostSignal = async (msg = '', emoji = '') => {
+    const input = document.getElementById('ghost-input');
+    const actualMsg = msg || input.value.trim();
+    if (!actualMsg && !emoji) return;
+
+    const fd = new FormData();
+    fd.append('message', actualMsg);
+    fd.append('emoji', emoji);
+
+    const res = await apiCall('ghost_actions.php?action=send', 'POST', fd);
+    if (res.success) {
+        if (input) input.value = '';
+        pollState();
+    } else {
+        showToast(res.error);
+    }
+};
+
+// Listen for Enter in ghost chat
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && document.activeElement.id === 'ghost-input') {
+        sendGhostSignal();
+    }
+});
 
 // Initializer
 if (window.location.search.includes('view=room')) {

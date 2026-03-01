@@ -28,7 +28,10 @@ switch ($action) {
         if ($status !== 'clue') json_response(['error' => 'Cannot submit clue right now.'], 400);
         $clueText = $_POST['clue'] ?? '';
         if (empty($clueText)) json_response(['error' => 'Clue required'], 400);
-        $gameCtrl->submitClue($round['id'], $playerId, $clueText);
+        $result = $gameCtrl->submitClue($round['id'], $playerId, $clueText);
+        if (!$result['success']) {
+            json_response(['error' => $result['error']], 400);
+        }
         json_response(['success' => true]);
         break;
 
@@ -54,7 +57,7 @@ switch ($action) {
         break;
 
     case 'imposter_guess':
-        if ($status !== 'clue') json_response(['error' => 'You can only guess during the clue phase.'], 400);
+        if ($status !== 'clue' && $status !== 'voting') json_response(['error' => 'You can only guess during the clue or voting phase.'], 400);
         if ($round['imposter_id'] != $playerId) {
             json_response(['error' => 'Only the imposter can guess.'], 403);
         }
